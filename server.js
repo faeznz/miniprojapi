@@ -23,15 +23,27 @@ mongoose.connect('mongodb+srv://faeznz:faeznz@data.h3xudui.mongodb.net/miniproj?
         console.error('Failed to connect to MongoDB:', error);
     });
 
-// Define the item schema and model (assuming you have an Item model)
 const itemSchema = new mongoose.Schema({
     image: String,
     nama: String,
     harga: String,
     keterangan: String,
+    rating: String,
+    id:String,
+    review: Array,
 });
 
 const Item = mongoose.model('Item', itemSchema);
+
+const alamatSchema = new mongoose.Schema({
+    label: String,
+    alamat: String,
+    nama: String,
+    nomor: String,
+    uuid: String,
+});
+
+const Alamat = mongoose.model('Alamat', alamatSchema);
 
 app.get('/item', async (req, res) => {
     try {
@@ -41,6 +53,31 @@ app.get('/item', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch items' });
     }
 });
+
+app.get('/item/:id', async (req, res) => {
+    try {
+        const itemId = req.params.id;
+        const item = await Item.findById(itemId);
+        if (!item) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.status(200).json(item);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch item' });
+    }
+});
+
+app.get('/item/:id/review', async (req, res) => {
+    const itemId = req.params.id;
+  
+    try {
+      const review = await Item.find({ itemId });
+  
+      res.status(200).json({ review });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+  });
 
 app.delete('/item/:id', async (req, res) => {
     try {
@@ -65,6 +102,26 @@ app.post('/item', async (req, res) => {
     }
 });
 
+app.post('/item/:id/review', async (req, res) => {
+    const itemId = req.params.id;
+    const reviews = req.body.review;
+  
+    try {
+      const item = await Item.findById(itemId);
+  
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+      item.review.push(reviews);
+
+      await item.save();
+  
+      res.status(200).json({ message: 'Review added successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to add review' });
+    }
+  });
+
 app.put('/item/:id', async (req, res) => {
     try {
         const updatedItem = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -77,9 +134,69 @@ app.put('/item/:id', async (req, res) => {
     }
 });
 
+app.get('/alamat', async (req, res) => {
+    try {
+        const alamats = await Alamat.find();
+        res.status(200).json(alamats);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch alamat' });
+    }
+});
+
+app.get('/alamat/:uuid', async (req, res) => {
+    try {
+        const alamatId = req.body.uuid;
+        const alamat = await Alamat.find.uuid(alamatId);
+        if (!alamat) {
+            return res.status(404).json({ error: 'Alamat not found' });
+        }
+        res.status(200).json(alamat);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch alamat' });
+    }
+});
+
+app.delete('/alamat/:id', async (req, res) => {
+    try {
+        const deletedAlamat = await Alamat.findByIdAndDelete(req.params.id);
+        if (!deletedAlamat) {
+            return res.status(404).json({ error: 'Alamat not found' });
+        }
+        res.status(200).json({ message: 'Alamat deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete alamat' });
+    }
+});
+
+app.post('/alamat', async (req, res) => {
+    try {
+        const newAlamat = new Alamat(req.body);
+        const savedAlamat = await newAlamat.save();
+        res.status(200).json({
+            message: 'Alamat post successfully',
+            data: savedAlamat
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to add alamat' });
+    }
+});
+
+
+app.put('/alamat/:id', async (req, res) => {
+    try {
+        const updatedAlamat = await Alamat.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updatedAlamat) {
+            return res.status(404).json({ error: 'Alamat not found' });
+        }
+        res.status(200).json({ message: 'Alamat update successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update alamat' });
+    }
+});
+
 
 app.get('/', (req, res) => {
-    res.send('API for llaboooApp');
+    res.send('API for Mini Project');
 });
 
 app.listen(PORT, () => {
